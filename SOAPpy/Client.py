@@ -39,11 +39,11 @@
 #
 ################################################################################
 """
+from __future__ import nested_scopes
 
 ident = '$Id: Client.py,v 1.27 2005/02/21 20:27:09 warnes Exp $'
 from version import __version__
 
-from __future__ import nested_scopes
 
 #import xml.sax
 import urllib
@@ -125,7 +125,7 @@ class HTTPTransport:
                 return original_namespace
         else:
             return original_namespace
-    
+
     # Need a Timeout someday?
     def call(self, addr, data, namespace, soapaction = None, encoding = None,
         http_proxy = None, config = Config):
@@ -164,7 +164,7 @@ class HTTPTransport:
         # if user is not a user:passwd format
         #    we'll receive a failure from the server. . .I guess (??)
         if addr.user != None:
-            val = base64.encodestring(addr.user) 
+            val = base64.encodestring(addr.user)
             r.putheader('Authorization','Basic ' + val.replace('\012',''))
 
         # This fixes sending either "" or "None"
@@ -218,7 +218,7 @@ class HTTPTransport:
             message_len = int(content_length)
         except:
             message_len = -1
-            
+
         if message_len < 0:
             # Content-Length missing or invalid; just read the whole socket
             # This won't work with HTTP/1.1 chunked encoding
@@ -233,7 +233,7 @@ class HTTPTransport:
             print "headers=", headers
             print "content-type=", content_type
             print "data=", data
-                
+
         if config.dumpHeadersIn:
             s = 'Incoming HTTP headers'
             debugHeader(s)
@@ -246,7 +246,7 @@ class HTTPTransport:
 
         def startswith(string, val):
             return string[0:len(val)] == val
-        
+
         if code == 500 and not \
                ( startswith(content_type, "text/xml") and message_len > 0 ):
             raise HTTPError(code, msg)
@@ -268,7 +268,7 @@ class HTTPTransport:
             new_ns = None
         else:
             new_ns = self.getNS(namespace, data)
-        
+
         # return response payload
         return data, new_ns
 
@@ -316,10 +316,10 @@ class SOAPProxy:
             self.channel_mode = config.channel_mode
             self.delegation_mode = config.delegation_mode
         #end GSI Additions
-        
+
     def invoke(self, method, args):
         return self.__call(method, args, {})
-        
+
     def __call(self, name, args, kw, ns = None, sa = None, hd = None,
         ma = None):
 
@@ -334,7 +334,7 @@ class SOAPProxy:
                 sa = self.soapaction
             else:
                 sa = name
-                
+
         if hd: # Get header
             if type(hd) == TupleType:
                 hd = hd[0]
@@ -368,7 +368,7 @@ class SOAPProxy:
             #
             # See if we have a fault handling vector installed in our
             # config. If we do, invoke it. If it returns a true value,
-            # retry the call. 
+            # retry the call.
             #
             # In any circumstance other than the fault handler returning
             # true, reraise the exception. This keeps the semantics of this
@@ -390,7 +390,7 @@ class SOAPProxy:
                                                     encoding = self.encoding,
                                                     http_proxy = self.http_proxy,
                                                     config = self.config)
-            
+
 
         p, attrs = parseSOAPRPC(r, attrs = 1)
 
@@ -418,7 +418,7 @@ class SOAPProxy:
                         count += 1
                         t = getattr(p, i)
                 if count == 1: # Only one piece of data, bubble it up
-                    p = t 
+                    p = t
             except:
                 pass
 
@@ -468,7 +468,7 @@ class SOAPProxy:
                     return self.__f_call(*args, **kw)
             else:
                 return self.__r_call(*args, **kw)
-                        
+
         def __getattr__(self, name):
             if name == '__del__':
                 raise AttributeError, name
