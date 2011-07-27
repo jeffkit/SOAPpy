@@ -33,11 +33,10 @@
 ################################################################################
 """
 
-ident = '$Id: SOAPBuilder.py,v 1.27 2005/02/21 20:24:13 warnes Exp $'
+ident = '$Id: SOAPBuilder.py 1298 2006-11-07 00:54:15Z sanxiyn $'
 from version import __version__
 
 import cgi
-import copy
 from wstools.XMLname import toXMLname, fromXMLname
 import fpconst
 
@@ -122,6 +121,7 @@ class SOAPBuilder:
         if self.method:
             # Save the NS map so that it can be restored when we
             # fall out of the scope of the method definition
+            #print 'method:',self.method
             save_ns_map = ns_map.copy()
             self.depth += 1
             a = ''
@@ -145,14 +145,13 @@ class SOAPBuilder:
 
             for i in args:
                 self.dump(i, typed = typed, ns_map = ns_map)
-
             if hasattr(self.config, "argsOrdering") and self.config.argsOrdering.has_key(self.method):
                 for k in self.config.argsOrdering.get(self.method):
-                    self.dump(self.kw.get(k), '%s%s'%(methodns,k), typed = typed, ns_map = ns_map)                
+                    self.dump(self.kw.get(k), k, typed = typed, ns_map = ns_map)
             else:
                 for (k, v) in self.kw.items():
-                    self.dump(v, '%s%s'%(methodns,k), typed = typed, ns_map = ns_map)
-                
+                    self.dump(v, k, typed = typed, ns_map = ns_map)
+
         except RecursionError:
             if self.use_refs == 0:
                 # restart
@@ -316,7 +315,9 @@ class SOAPBuilder:
 
         tag = toXMLname(tag) # convert from SOAP 1.2 XML name encoding
 
+
         a = n = t = ''
+
         if typed and obj_type:
             ns, n = self.genns(ns_map, nsURI)
             ins = self.genns(ns_map, self.config.schemaNamespaceURI)[0]
@@ -324,7 +325,7 @@ class SOAPBuilder:
 
         try: a = obj._marshalAttrs(ns_map, self)
         except: pass
-
+        #t = ' xmlns=""'
         try: data = obj._marshalData()
         except:
             if (obj_type != "string"): # strings are already encoded
@@ -450,7 +451,7 @@ class SOAPBuilder:
                     typename = "SOAPStruct"
 
                 t = ns + typename
-                                
+
             elif isinstance(sample, anyType):
                 ns = sample._validNamespaceURI(self.config.typesNamespaceURI,
                                                self.config.strictNamespaces)
@@ -467,9 +468,9 @@ class SOAPBuilder:
 
                 # HACK: unicode is a SOAP string
                 if type(sample) == UnicodeType: typename = 'string'
-                
+
 		# HACK: python 'float' is actually a SOAP 'double'.
-		if typename=="float": typename="double"  
+		if typename=="float": typename="double"
                 t = self.genns(ns_map, self.config.typesNamespaceURI)[0] + \
 		    typename
 
@@ -494,7 +495,7 @@ class SOAPBuilder:
             except: elemsname = "item"
         else:
             elemsname = tag
-            
+
         for i in data:
             self.dump(i, elemsname, not same_type, ns_map)
 
@@ -514,7 +515,7 @@ class SOAPBuilder:
         try: a = obj._marshalAttrs(ns_map, self)
         except: a = ''
 
-        self.out.append('<%s%s%s%s>\n' % 
+        self.out.append('<%s%s%s%s>\n' %
                         (tag, id, a, self.genroot(ns_map)))
 
         for (k, v) in obj.items():
@@ -533,6 +534,7 @@ class SOAPBuilder:
                 tag = obj._name
             else:
                 tag = self.gentag()
+
         tag = toXMLname(tag) # convert from SOAP 1.2 XML name encoding
 
         if isinstance(obj, arrayType):      # Array
@@ -572,7 +574,8 @@ class SOAPBuilder:
             if ns:
                 ns, ndecl = self.genns(ns_map, ns)
                 tag = ns + tag
-            self.out.append("<%s%s%s%s%s>\n" % (tag, ndecl, id, a, r))
+            if 'Body' not in tag:
+                self.out.append("<%s%s%s%s%s>\n" % (tag, ndecl, id, a, r))
 
             keylist = obj.__dict__.keys()
 
@@ -592,8 +595,8 @@ class SOAPBuilder:
 
                 for v, k in self.multirefs:
                     self.dump(v, k, typed = typed, ns_map = ns_map)
-
-            self.out.append('</%s>\n' % tag)
+            if 'Body' not in tag:
+                self.out.append('</%s>\n' % tag)
 
         elif isinstance(obj, anyType):
             t = ''
